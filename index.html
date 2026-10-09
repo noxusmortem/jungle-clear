@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jungle Clear</title>
+<meta name="description" content="A practice tool for League of Legends junglers. Compare each clear against reference clears, camp by camp.">
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232d;
+    --line: #2a3441;
+    --text: #e6edf3;
+    --muted: #9aa7b4;
+    --accent: #3ddc97;
+    --behind: #ff6b6b;
+    --gold: #e8c46a;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+  }
+  a { color: var(--accent); }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 20px; }
+
+  header.site {
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+    position: sticky; top: 0; z-index: 5;
+  }
+  header.site .wrap {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px;
+  }
+  .brand { font-weight: 700; letter-spacing: .2px; }
+  .brand span { color: var(--accent); }
+  nav a { color: var(--muted); text-decoration: none; margin-left: 20px; font-size: 14px; }
+  nav a:hover { color: var(--text); }
+
+  .hero { padding: 72px 0 48px; }
+  .badge {
+    display: inline-block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--gold); border: 1px solid var(--gold); border-radius: 999px; padding: 3px 12px;
+  }
+  h1 { font-size: clamp(34px, 6vw, 54px); line-height: 1.1; margin: 18px 0 14px; }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lead { color: var(--muted); font-size: 19px; max-width: 640px; margin: 0; }
+
+  section { padding: 44px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: 26px; margin: 0 0 8px; }
+  .sub { color: var(--muted); margin: 0 0 28px; max-width: 640px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+  .card h3 { margin: 0 0 6px; font-size: 17px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+
+  /* mockups */
+  .mock-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; align-items: start; }
+  .window {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+  }
+  .window .bar {
+    background: var(--panel-2); padding: 8px 14px; font-size: 12px; color: var(--muted);
+    display: flex; justify-content: space-between; border-bottom: 1px solid var(--line);
+  }
+  .window .body { padding: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+  th { text-align: left; color: var(--muted); font-weight: 500; font-size: 12px; padding: 4px 6px; }
+  td { padding: 7px 6px; border-top: 1px solid var(--line); }
+  td.num { text-align: right; }
+  .ahead { color: var(--accent); }
+  .behind { color: var(--behind); }
+  .done td { color: var(--muted); }
+  .current td { background: rgba(61,220,151,.09); }
+  .note { font-size: 12px; color: var(--muted); margin-top: 10px; }
+  .route { display: grid; gap: 8px; }
+  .step {
+    display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: center;
+    padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;
+  }
+  .step .n {
+    width: 24px; height: 24px; border-radius: 50%; background: var(--panel-2);
+    display: grid; place-items: center; font-size: 12px; color: var(--muted);
+  }
+  .step.done { opacity: .5; }
+  .step.done .n { background: var(--accent); color: #06130d; }
+  .step.current { border-color: var(--accent); }
+  .step small { display: block; color: var(--muted); font-size: 12px; }
+  .step .tip { color: var(--gold); font-size: 12px; }
+  .route-title { font-weight: 600; margin-bottom: 10px; }
+  .start-badge {
+    display: inline-block; margin-bottom: 12px; padding: 4px 12px; border-radius: 6px;
+    background: rgba(255,107,107,.15); border: 1px solid #ff6b6b; color: #ff8f8f;
+    font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  }
+  .stat-row { display: flex; gap: 12px; margin-bottom: 12px; }
+  .stat { flex: 1; background: var(--panel-2); border-radius: 8px; padding: 10px 12px; }
+  .stat b { display: block; font-size: 20px; }
+  .stat span { font-size: 12px; color: var(--muted); }
+
+  ul.clean { list-style: none; padding: 0; margin: 0; }
+  ul.clean li { padding: 6px 0 6px 22px; position: relative; color: var(--text); }
+  ul.clean li::before { content: ""; position: absolute; left: 0; top: 14px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  ul.no li::before { background: var(--behind); }
+
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+
+  footer { border-top: 1px solid var(--line); padding: 32px 0 48px; color: var(--muted); font-size: 13px; }
+  footer p { margin: 0 0 10px; }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <div class="brand">Jungle <span>Clear</span></div>
+    <nav>
+      <a href="#what">What it does</a>
+      <a href="#preview">Preview</a>
+      <a href="#fair">Fair play</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <div class="hero">
+      <span class="badge">In development</span>
+      <h1>Get faster at your <em>first clear</em>.</h1>
+      <p class="lead">
+        Jungle Clear is a practice tool for League of Legends junglers, inspired by build-order trainers in
+        other games. It compares each clear against a built-in set of fast, efficient reference clears for every
+        champion, so you can see exactly where you lose time.
+      </p>
+    </div>
+
+    <section id="what">
+      <h2>What it does</h2>
+      <p class="sub">Everything is measured against reference clears that ship with the app, and the app only looks at your own clear.</p>
+      <div class="grid">
+        <div class="card">
+          <h3>Camp-by-camp splits</h3>
+          <p>Detects each jungle camp you clear and shows your split time ahead of or behind the reference.</p>
+        </div>
+        <div class="card">
+          <h3>Casts and hits per camp</h3>
+          <p>Counts your ability casts and basic attack hits in each camp and compares them to the reference clear.</p>
+        </div>
+        <div class="card">
+          <h3>Route card</h3>
+          <p>Shows the camp order, which monster to hit first in each camp, and the planned ability use. It marks your progress as your own camps are cleared.</p>
+        </div>
+        <div class="card">
+          <h3>Reference clears per champion</h3>
+          <p>Reference clears are bundled with the app and updated per patch, with more than one route option per champion where it makes sense.</p>
+        </div>
+        <div class="card">
+          <h3>Your own history</h3>
+          <p>Your clears are recorded locally so you can track progress over time, per champion.</p>
+        </div>
+        <div class="card">
+          <h3>Progress window</h3>
+          <p>A desktop window shows your history, best runs and trends for each champion, outside of the game.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="preview">
+      <h2>Preview</h2>
+      <p class="sub">Concept mockups of the in-game panel and the desktop window. Camp names and numbers are illustrative only and are not final.</p>
+
+      <div class="mock-row">
+        <div class="window">
+          <div class="bar"><span>In-game panel</span><span>Concept mockup</span></div>
+          <div class="body">
+            <div class="start-badge">Red Start</div>
+            <table>
+              <thead><tr><th>Camp</th><th class="num">Split</th><th class="num">Reference</th><th class="num">Diff</th></tr></thead>
+              <tbody>
+                <tr class="done"><td>Red Buff</td><td class="num">1:16</td><td class="num">1:15</td><td class="num behind">+1</td></tr>
+                <tr class="done"><td>Krugs</td><td class="num">1:29</td><td class="num">1:30</td><td class="num ahead">&minus;1</td></tr>
+                <tr class="done"><td>Raptors</td><td class="num">1:56</td><td class="num">1:54</td><td class="num behind">+2</td></tr>
+                <tr class="current"><td>Wolves</td><td class="num">&ndash;</td><td class="num">2:14</td><td class="num">&ndash;</td></tr>
+                <tr><td>Gromp</td><td class="num">&ndash;</td><td class="num">2:32</td><td class="num">&ndash;</td></tr>
+                <tr><td>Blue Buff</td><td class="num">&ndash;</td><td class="num">2:51</td><td class="num">&ndash;</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="window">
+          <div class="bar"><span>Route card</span><span>Concept mockup</span></div>
+          <div class="body">
+            <div class="route-title">Shyvana red side full clear</div>
+            <div class="route">
+              <div class="step done"><div class="n">1</div><div>Red Buff <span class="tip">(Smite anytime)</span><small>AA &gt; Q &gt; AA &gt; Q &gt; AA &gt; 4 AA while kiting &gt; Q &gt; AA &gt; Q &gt; AA &gt; 3 AAs</small></div></div>
+              <div class="step done"><div class="n">2</div><div>Krugs<small>Big Krug first &gt; Q &gt; AA &gt; W &gt; AA &gt; Q &gt; 2 AAs</small></div></div>
+              <div class="step done"><div class="n">3</div><div>Raptors<small>Big Raptor first &gt; W &gt; AA &gt; Q &gt; AA &gt; Q &gt; 3 AAs</small></div></div>
+              <div class="step current"><div class="n">4</div><div>Wolves<small>Big Wolf first &gt; Q &gt; AA &gt; W &gt; AA &gt; Q &gt; 2 AAs</small></div></div>
+              <div class="step"><div class="n">5</div><div>Gromp<small>AA &gt; Q &gt; AA &gt; Q &gt; 3 AAs</small></div></div>
+              <div class="step"><div class="n">6</div><div>Blue Buff<small>AA &gt; Q &gt; AA &gt; W &gt; AA &gt; Q &gt; 4 AAs</small></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="window">
+          <div class="bar"><span>Desktop window</span><span>Concept mockup</span></div>
+          <div class="body">
+            <div class="stat-row">
+              <div class="stat"><b>12</b><span>Clears recorded</span></div>
+              <div class="stat"><b>&minus;3s</b><span>Avg vs reference</span></div>
+            </div>
+            <table>
+              <thead><tr><th>Champion</th><th class="num">Best</th><th class="num">Recent</th></tr></thead>
+              <tbody>
+                <tr><td>Champion A</td><td class="num">3:12</td><td class="num">3:19</td></tr>
+                <tr><td>Champion B</td><td class="num">3:25</td><td class="num">3:24</td></tr>
+                <tr><td>Champion C</td><td class="num">3:31</td><td class="num">3:40</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="fair">
+      <h2>Fair play</h2>
+      <p class="sub">Jungle Clear is a training tool. It gives no live advice and no information about the other team.</p>
+      <div class="two">
+        <div class="card">
+          <h3>What it does</h3>
+          <ul class="clean">
+            <li>Shows only your own data, compared to a pre-set reference</li>
+            <li>Lets you pick your own route before the game</li>
+            <li>Keeps your history on your own computer</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>What it never does</h3>
+          <ul class="clean no">
+            <li>Track enemy cooldowns or summoner spells</li>
+            <li>Show ultimate timers or power-spike alerts</li>
+            <li>Tell you what to do during a game</li>
+          </ul>
+        </div>
+      </div>
+      <p class="note" style="margin-top:18px">
+        The core features are free. The app uses game events provided through Overwolf and does not need a Riot API key.
+      </p>
+    </section>
+
+    <section id="contact">
+      <h2>Contact</h2>
+      <p class="sub">Questions, feedback or bug reports are welcome.</p>
+      <p><a href="mailto:your-email@example.com">your-email@example.com</a></p>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>
+      Jungle Clear isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or
+      anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated
+      properties are trademarks or registered trademarks of Riot Games, Inc.
+    </p>
+    <p>&copy; 2026 Jungle Clear</p>
+  </div>
+</footer>
+
+</body>
+</html>
